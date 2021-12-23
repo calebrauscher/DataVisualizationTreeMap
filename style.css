@@ -21,7 +21,15 @@ svg {
 }
 
 #legend {
-  min-height: 150px;
+  min-height: 100px;
+  min-width: 1000px;
+  font-size: 15px;
+  text-align: center;
+  display: block;
+  margin: auto;
+  padding-bottom: 5px;
+  margin-bottom: 2rem;
+  margin-top: 1rem;
 }
 
 #tooltip {

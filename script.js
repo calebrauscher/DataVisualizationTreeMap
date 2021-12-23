@@ -58,8 +58,8 @@ const drawTreeMap = (data) => {
       tooltip
         .attr("id", "tooltip")
         .attr("data-value", d.value)
-        .attr("left", d3.event.pageX + "px")
-        .attr("top", d3.event.pageY + "px")
+        .style("left", d3.event.pageX + "px")
+        .style("top", d3.event.pageY + "px")
         .html(`<p><strong>Name:</strong> ${d.data.name}</p>
         <p><strong>Category:</strong> ${d.data.category}</p>
         <p><strong>Value:</strong> ${d.data.value}</p>
@@ -69,11 +69,13 @@ const drawTreeMap = (data) => {
       tooltip.transition().style("visibility", "hidden");
     });
 
+  console.log(cell.style("width"));
   cell
     .append("text")
-    .text((d) => d.data.name)
-    .attr("x", 5)
-    .attr("y", 15);
+    .attr("y", 15)
+    .attr("dy", 0)
+    .text((d) => d.data.name) //add here
+    .call(wrap, 45);
 
   const legend = body.append("svg").attr("id", "legend");
   const categories = hierarchy
@@ -81,32 +83,41 @@ const drawTreeMap = (data) => {
     .map((n) => n.data.category)
     .filter((item, idx, arr) => arr.indexOf(item) === idx);
 
-  const blockSize = 20;
-  const legendWidth = 200;
-  const legendHeight = (blockSize + 2) * categories.length;
+  let legendWidth = +parseFloat(legend.style("width"));
 
-  legend
-    .selectAll("rect")
-    .data(categories)
-    .enter()
-    .append("rect")
-    .attr("class", "legend-item")
-    .attr("fill", (d) => color(d))
-    .attr("x", blockSize / 2)
-    .attr("y", (_, i) => i * (blockSize + 1) + 10)
-    .attr("width", blockSize)
-    .attr("height", blockSize);
+  const LEGEND_OFFSET = 10;
+  const LEGEND_RECT_SIZE = 15;
+  const LEGEND_H_SPACING = 150;
+  const LEGEND_V_SPACING = 10;
+  const LEGEND_TEXT_X_OFFSET = 3;
+  const LEGEND_TEXT_Y_OFFSET = -2;
+  let legendElemsPerRow = Math.floor(legendWidth / LEGEND_H_SPACING);
 
-  legend
+  let legendElem = legend
     .append("g")
-    .selectAll("text")
+    .attr("transform", `translate(60, ${LEGEND_OFFSET})`)
+    .selectAll("g")
     .data(categories)
     .enter()
+    .append("g")
+    .attr("transform", (d, i) => {
+      return `translate(${(i % legendElemsPerRow) * LEGEND_H_SPACING}, ${
+        Math.floor(i / legendElemsPerRow) * LEGEND_RECT_SIZE +
+        LEGEND_V_SPACING * Math.floor(i / legendElemsPerRow)
+      })`;
+    });
+
+  legendElem
+    .append("rect")
+    .attr("width", LEGEND_RECT_SIZE)
+    .attr("height", LEGEND_RECT_SIZE)
+    .attr("class", "legend-item")
+    .attr("fill", (d) => color(d));
+
+  legendElem
     .append("text")
-    .attr("fill", "black")
-    .attr("fill", "black")
-    .attr("x", blockSize * 2)
-    .attr("y", (_, i) => i * (blockSize + 1) + 25)
+    .attr("x", LEGEND_RECT_SIZE + LEGEND_TEXT_X_OFFSET)
+    .attr("y", LEGEND_RECT_SIZE + LEGEND_TEXT_Y_OFFSET)
     .text((d) => d);
 };
 
@@ -116,3 +127,37 @@ d3.json(url).then((data, error) => {
   }
   drawTreeMap(data);
 });
+
+const wrap = (text, width) => {
+  text.each(function () {
+    var text = d3.select(this),
+      words = text.text().split(/\s+/).reverse(),
+      word,
+      line = [],
+      lineNumber = 0,
+      lineHeight = 1.1, // ems
+      y = text.attr("y"),
+      dy = parseFloat(text.attr("dy")),
+      tspan = text
+        .text(null)
+        .append("tspan")
+        .attr("x", 0)
+        .attr("y", y)
+        .attr("dy", dy + "em");
+    while ((word = words.pop())) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text
+          .append("tspan")
+          .attr("x", 0)
+          .attr("y", y)
+          .attr("dy", ++lineNumber * lineHeight + dy + "em")
+          .text(word);
+      }
+    }
+  });
+};
